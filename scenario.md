@@ -87,7 +87,7 @@ DeviceNetworkEvents
 * **Date**: *TBD*
 
 ---
-✅ PowerShell Steps to Simulate the Credential Dump Simulation
+💻 Simulation Script (Safe)
 
 ```Powershell
 
